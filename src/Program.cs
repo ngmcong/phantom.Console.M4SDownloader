@@ -91,6 +91,8 @@ internal class Program
             Console.WriteLine(string.Empty);
             return;
         }
+        Console.WriteLine($"M4S URL: {m4sUrl}");
+        Console.WriteLine($"Default File Name: {defaultFileName}");
 
         var client = new HttpClient();
         var response = await client.GetAsync(m4sUrl);
@@ -145,7 +147,7 @@ internal class Program
             }
 
             defaultFileName = string.IsNullOrEmpty(defaultFileName) ? $"{dirName}.mp4" : defaultFileName;
-            (bool success, string output, string error, int exitCode) = await RunFFmpegWithExitCodeAsync($"-i \"concat:{initFileName}|{allFileName}\" -c copy {defaultFileName}"
+            (bool success, string output, string error, int exitCode) = await RunFFmpegWithExitCodeAsync($"-i \"concat:{initFileName}|{allFileName}\" -c copy \"{defaultFileName}\""
                 , Path.Combine(rootFoler, "M4S"));
 
             Console.WriteLine($"FFmpeg Exit Code: {exitCode}");
