@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35931.197
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "phantom.Console.M4SDownloader", "phantom.Console.M4SDownloader.csproj", "{FCC4BFC7-FE2B-4568-B649-D0BB2230A776}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FCC4BFC7-FE2B-4568-B649-D0BB2230A776}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCC4BFC7-FE2B-4568-B649-D0BB2230A776}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCC4BFC7-FE2B-4568-B649-D0BB2230A776}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCC4BFC7-FE2B-4568-B649-D0BB2230A776}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {90A132D3-57E5-43D4-9D5D-3B348E84C931}
+	EndGlobalSection
+EndGlobal
