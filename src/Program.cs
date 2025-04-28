@@ -72,9 +72,9 @@ internal class Program
     }
     private static string GetCorrectUrl(string contentUrl, string startUrl)
     {
-        if (contentUrl.Length > 10)
+        if (contentUrl.Length > 20)
         {
-            var lastIndex = startUrl.LastIndexOf(contentUrl.Substring(0, 5));
+            var lastIndex = startUrl.LastIndexOf(contentUrl.Substring(0, 20));
             if (lastIndex > 0)
             {
                 return startUrl.Substring(0, lastIndex) + contentUrl;
