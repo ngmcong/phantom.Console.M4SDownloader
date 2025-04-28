@@ -74,10 +74,10 @@ internal class Program
     {
         if (contentUrl.Length > 10)
         {
-            var beginIndex = startUrl.IndexOf(contentUrl.Substring(0, 5));
-            if (beginIndex > 10)
+            var lastIndex = startUrl.LastIndexOf(contentUrl.Substring(0, 5));
+            if (lastIndex > 0 && startUrl.Length - lastIndex == contentUrl.Length)
             {
-                return startUrl.Substring(0, beginIndex) + contentUrl;
+                return startUrl.Substring(0, lastIndex) + contentUrl;
             }
         }
         return contentUrl.StartsWith("https://") ? contentUrl : $"{startUrl}{contentUrl}";
