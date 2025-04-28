@@ -40,7 +40,7 @@ internal class Program
                     if (!string.IsNullOrEmpty(args.Data))
                     {
                         output += args.Data + Environment.NewLine;
-                        Console.WriteLine(args.Data);
+                        // Console.WriteLine(args.Data);
                     }
                 };
 
@@ -49,7 +49,7 @@ internal class Program
                     if (!string.IsNullOrEmpty(args.Data))
                     {
                         error += args.Data + Environment.NewLine;
-                        Console.WriteLine($"Error: {args.Data}");
+                        // Console.WriteLine($"Error: {args.Data}");
                     }
                 };
 
@@ -121,16 +121,18 @@ internal class Program
             var dirName = m4sUrl.Replace(startUrl, "");
 
             if (Directory.Exists(Path.Combine(rootFoler, "M4S")) == false) Directory.CreateDirectory(Path.Combine(rootFoler, "M4S"));
+            if (Directory.Exists(Path.Combine(rootFoler, "M4S", dirName)) == false) Directory.CreateDirectory(Path.Combine(rootFoler, "M4S", dirName));
 
             string initFileName = string.Empty;
+            string initFilePath = string.Empty;
             if (lines.Any(x => x.StartsWith("#EXT-X-MAP:URI=")))
             {
                 var line = lines.First(x => x.StartsWith("#EXT-X-MAP:URI="));
                 Regex regex = new Regex(@"#EXT-X-MAP:URI=""(.*)""");
                 var match = regex.Match(line);
-                var initFileUrl =GetCorrectUrl(match.Groups[1].Value, startUrl);
+                var initFileUrl = GetCorrectUrl(match.Groups[1].Value, startUrl);
                 initFileName = initFileUrl.Substring(initFileUrl.LastIndexOf('/') + 1);
-                var initFilePath = Path.Combine(rootFoler, "M4S", initFileName);
+                initFilePath = Path.Combine(rootFoler, "M4S", dirName, initFileName);
                 if (File.Exists(initFilePath)) File.Delete(initFilePath);
                 try
                 {
@@ -147,36 +149,48 @@ internal class Program
                     return;
                 }
             }
-            var allFileName = $"{dirName}.m4s";
-            var allFilePath = Path.Combine(rootFoler, "M4S", allFileName);
-            if (File.Exists(allFilePath) == false) File.Delete(allFilePath);
-            foreach (var url in urls)
+            bool success; string output; string error; int exitCode;
+            using (StreamWriter writer = new StreamWriter(Path.Combine(rootFoler, "M4S", dirName, $"{dirName}.txt"), true))
             {
-                try
+                foreach (var url in urls)
                 {
-                    var bytes = await DownLoadFileFromUrl(client, url);
-                    using (FileStream fileStream = new FileStream(allFilePath, FileMode.Append))
+                    try
                     {
-                        // Write the bytes to the end of the stream.
-                        fileStream.Write(bytes, 0, bytes.Length);
+                        var fileName = url.Substring(url.LastIndexOf('/') + 1);
+                        var bytes = await DownLoadFileFromUrl(client, url);
+                        using (FileStream fileStream = new FileStream(Path.Combine(rootFoler, "M4S", dirName, fileName), FileMode.Create))
+                        {
+                            fileStream.Write(bytes, 0, bytes.Length);
+                        }
+
+                        // Run FFmpeg to convert the M4S file to MP4
+                        (success, output, error, exitCode) = await RunFFmpegWithExitCodeAsync($"-i \"concat:{initFileName}|{fileName}\" -c copy \"{fileName.Replace(".m4s", ".mp4")}\""
+                            , Path.Combine(rootFoler, "M4S", dirName));
+                        if (success == false)
+                        {
+                            Console.WriteLine("FFmpeg conversion failed.");
+                            Console.WriteLine($"Error Output:\n{error}");
+                            return;
+                        }
+
+                        File.Delete(Path.Combine(rootFoler, "M4S", dirName, fileName));
+                        await writer.WriteLineAsync($"file '{Path.Combine(rootFoler, "M4S", dirName, fileName.Replace(".m4s", ".mp4"))}'");
+
+                        Console.WriteLine($"Downloaded {urls.IndexOf(url) + 1}/{urls.Count}.");
                     }
-                    Console.WriteLine($"Downloaded {urls.IndexOf(url) + 1}/{urls.Count}.");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Error: {ex.Message}");
-                    return;
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error: {ex.Message}");
+                        return;
+                    }
                 }
             }
-
+            if (string.IsNullOrEmpty(initFilePath) == false && File.Exists(initFilePath)) File.Delete(initFilePath);
             defaultFileName = string.IsNullOrEmpty(defaultFileName) ? $"{dirName}.mp4" : defaultFileName;
-            if (File.Exists(Path.Combine(rootFoler, "M4S", defaultFileName))) File.Delete(Path.Combine(rootFoler, "M4S", defaultFileName));
-            // Run FFmpeg to convert the M4S file to MP4
-            (bool success, string output, string error, int exitCode) = await RunFFmpegWithExitCodeAsync($"-i \"concat:{initFileName}|{allFileName}\" -c copy \"{defaultFileName}\""
-                , Path.Combine(rootFoler, "M4S"));
-
+            // Run FFmpeg to merge the list mp4 file to final MP4
+            (success, output, error, exitCode) = await RunFFmpegWithExitCodeAsync($"-f concat -safe 0 -i {dirName}.txt -c copy \"{defaultFileName}\""
+                , Path.Combine(rootFoler, "M4S", dirName));
             Console.WriteLine($"FFmpeg Exit Code: {exitCode}");
-
             if (success)
             {
                 Console.WriteLine($"Successfully converted to MP4 file.");
@@ -185,7 +199,15 @@ internal class Program
             {
                 Console.WriteLine("FFmpeg conversion failed.");
                 Console.WriteLine($"Error Output:\n{error}");
+                return;
             }
+            File.Move(Path.Combine(rootFoler, "M4S", dirName, defaultFileName), Path.Combine(rootFoler, "M4S", defaultFileName));
+            var files = Directory.GetFiles(Path.Combine(rootFoler, "M4S", dirName), "*.*");
+            foreach (var file in files)
+            {
+                File.Delete(file);
+            }
+            Directory.Delete(Path.Combine(rootFoler, "M4S", dirName));
         }
         else
         {
