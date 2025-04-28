@@ -49,6 +49,7 @@ internal class Program
                     if (!string.IsNullOrEmpty(args.Data))
                     {
                         error += args.Data + Environment.NewLine;
+                        Console.WriteLine($"Error: {args.Data}");
                     }
                 };
 
@@ -169,6 +170,8 @@ internal class Program
             }
 
             defaultFileName = string.IsNullOrEmpty(defaultFileName) ? $"{dirName}.mp4" : defaultFileName;
+            if (File.Exists(Path.Combine(rootFoler, "M4S", defaultFileName))) File.Delete(Path.Combine(rootFoler, "M4S", defaultFileName));
+            // Run FFmpeg to convert the M4S file to MP4
             (bool success, string output, string error, int exitCode) = await RunFFmpegWithExitCodeAsync($"-i \"concat:{initFileName}|{allFileName}\" -c copy \"{defaultFileName}\""
                 , Path.Combine(rootFoler, "M4S"));
 
