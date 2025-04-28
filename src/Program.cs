@@ -40,6 +40,7 @@ internal class Program
                     if (!string.IsNullOrEmpty(args.Data))
                     {
                         output += args.Data + Environment.NewLine;
+                        Console.WriteLine(args.Data);
                     }
                 };
 
@@ -67,6 +68,18 @@ internal class Program
         {
             return (false, output, $"Error running FFmpeg: {ex.Message}", exitCode);
         }
+    }
+    private static string GetCorrectUrl(string contentUrl, string startUrl)
+    {
+        if (contentUrl.Length > 10)
+        {
+            var beginIndex = startUrl.IndexOf(contentUrl.Substring(0, 5));
+            if (beginIndex > 10)
+            {
+                return startUrl.Substring(0, beginIndex) + contentUrl;
+            }
+        }
+        return contentUrl.StartsWith("https://") ? contentUrl : $"{startUrl}{contentUrl}";
     }
     private static async Task Main(string[] args)
     {
@@ -103,7 +116,7 @@ internal class Program
             var content = await response.Content.ReadAsStringAsync();
             var startUrl = m4sUrl.Substring(0, m4sUrl.LastIndexOf('/') + 1);
             var lines = content.Split("\n", StringSplitOptions.RemoveEmptyEntries);
-            var urls = lines.Where(x => x.EndsWith(".m4s")).Select(x => $"{startUrl}{x}").ToList();
+            var urls = lines.Where(x => x.EndsWith(".m4s")).Select(x => GetCorrectUrl(x, startUrl)).ToList();
             var dirName = m4sUrl.Replace(startUrl, "");
 
             if (Directory.Exists(Path.Combine(rootFoler, "M4S")) == false) Directory.CreateDirectory(Path.Combine(rootFoler, "M4S"));
@@ -114,15 +127,23 @@ internal class Program
                 var line = lines.First(x => x.StartsWith("#EXT-X-MAP:URI="));
                 Regex regex = new Regex(@"#EXT-X-MAP:URI=""(.*)""");
                 var match = regex.Match(line);
-                var initFileUrl = $"{startUrl}{match.Groups[1].Value}";
+                var initFileUrl =GetCorrectUrl(match.Groups[1].Value, startUrl);
                 initFileName = initFileUrl.Substring(initFileUrl.LastIndexOf('/') + 1);
                 var initFilePath = Path.Combine(rootFoler, "M4S", initFileName);
                 if (File.Exists(initFilePath)) File.Delete(initFilePath);
-                var initBytes = await DownLoadFileFromUrl(client, initFileUrl);
-                using (FileStream fileStream = new FileStream(initFilePath, FileMode.Create))
+                try
                 {
-                    // Write the bytes to the end of the stream.
-                    fileStream.Write(initBytes, 0, initBytes.Length);
+                    var initBytes = await DownLoadFileFromUrl(client, initFileUrl);
+                    using (FileStream fileStream = new FileStream(initFilePath, FileMode.Create))
+                    {
+                        // Write the bytes to the end of the stream.
+                        fileStream.Write(initBytes, 0, initBytes.Length);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error: {ex.Message}");
+                    return;
                 }
             }
             var allFileName = $"{dirName}.m4s";
@@ -143,6 +164,7 @@ internal class Program
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error: {ex.Message}");
+                    return;
                 }
             }
 
