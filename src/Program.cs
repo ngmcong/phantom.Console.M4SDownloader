@@ -75,7 +75,7 @@ internal class Program
         if (contentUrl.Length > 10)
         {
             var lastIndex = startUrl.LastIndexOf(contentUrl.Substring(0, 5));
-            if (lastIndex > 0 && startUrl.Length - lastIndex == contentUrl.Length)
+            if (lastIndex > 0)
             {
                 return startUrl.Substring(0, lastIndex) + contentUrl;
             }
